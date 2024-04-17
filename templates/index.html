@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recipe Search</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button#speechButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+        button#speechButton:hover {
+            background-color: #45a049;
+        }
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            max-width: 1000px; /* Adjust the maximum width of the container */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
+            overflow: hidden;
+            width: calc(33.33% - 20px); /* Set width of card to 33.33% minus margins */
+        }
+        .card-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .card img {
+            max-width: 100%; /* Limit the maximum width of the image */
+            height: auto;
+        }
+        .card-content {
+            margin-top: 20px;
+        }
+        .card-content h2 {
+            margin-top: 0;
+        }
+        .card-content p {
+            margin-bottom: 10px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recipe Search</h1>
+    <button id="speechButton">Speak to Search Recipe</button>
+    <div class="card-container" id="recipeDetails"></div>
+    <div class="footer">
+        Powered by <a href="https://spoonacular.com/food-api" target="_blank">Spoonacular API</a>
+    </div>
+    <script>
+        document.getElementById('speechButton').addEventListener('click', function() {
+            var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                var query = event.results[0][0].transcript.toLowerCase();
+                fetchRecipe(query);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Error occurred while recognizing speech:', event.error);
+            };
+        });
+
+        function fetchRecipe(query) {
+            if (query.trim() !== '') {
+                fetch('/get_recipe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                })
+                .then(response => response.json())
+                .then(data => displayRecipe(data))
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function displayRecipe(recipe) {
+            const recipeDetails = document.getElementById('recipeDetails');
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+            const cardHeader = document.createElement('div');
+            cardHeader.classList.add('card-header');
+            cardHeader.textContent = recipe.label;
+
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body');
+
+            const image = document.createElement('img');
+            image.src = recipe.image;
+            image.alt = recipe.label;
+
+            const cardContent = document.createElement('div');
+            cardContent.classList.add('card-content');
+
+            const ingredientList = document.createElement('p');
+            ingredientList.innerHTML = '<strong>Ingredients:</strong><br>' + recipe.ingredientLines.join('<br>');
+
+            const link = document.createElement('p');
+            link.innerHTML = `<strong>Link:</strong> <a href="${recipe.url}" target="_blank">Recipe Link</a>`;
+
+            cardContent.appendChild(ingredientList);
+            cardContent.appendChild(link);
+
+            cardBody.appendChild(image);
+            cardBody.appendChild(cardContent);
+
+            card.appendChild(cardHeader);
+            card.appendChild(cardBody);
+
+            recipeDetails.appendChild(card);
+        }
+    </script>
+</body>
+</html>
